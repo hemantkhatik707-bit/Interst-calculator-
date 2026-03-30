@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>सटीक ब्याज कैलकुलेटर</title>
+    <style>
+        :root {
+            --primary: #0984e3;
+            --secondary: #00b894;
+            --dark: #2d3436;
+            --light-bg: #f4f7f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: var(--light-bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 15px;
+        }
+
+        .calc-card {
+            background: #ffffff;
+            width: 100%;
+            max-width: 420px;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            text-align: center;
+            color: var(--dark);
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #444;
+            font-size: 14px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            box-sizing: border-box;
+            font-size: 16px;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(9, 132, 227, 0.1);
+        }
+
+        .row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 25px;
+        }
+
+        button {
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .btn-s { background-color: var(--primary); }
+        .btn-c { background-color: var(--secondary); }
+
+        button:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+
+        #resultSection {
+            margin-top: 25px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 12px;
+            border-left: 6px solid var(--primary);
+            display: none;
+        }
+
+        .res-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 17px;
+        }
+
+        .res-total {
+            border-top: 2px solid #ddd;
+            padding-top: 10px;
+            margin-top: 10px;
+            font-weight: 800;
+            font-size: 20px;
+            color: var(--dark);
+        }
+
+        .type-label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="calc-card">
+    <h2>📊 स्मार्ट ब्याज कैलकुलेटर</h2>
+
+    <div class="input-group">
+        <label>मूलधन (Principal Amount):</label>
+        <input type="number" id="p" placeholder="रुपये दर्ज करें">
+    </div>
+
+    <div class="input-group">
+        <label>ब्याज दर (% Rate):</label>
+        <div class="row">
+            <input type="number" id="r" placeholder="दर %">
+            <select id="rUnit">
+                <option value="day">प्रति दिन</option>
+                <option value="month" selected>प्रति माह</option>
+                <option value="year">प्रति वर्ष</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="input-group">
+        <label>समय (Duration):</label>
+        <div class="row">
+            <input type="number" id="t" placeholder="समय">
+            <select id="tUnit">
+                <option value="days">दिन</option>
+                <option value="months" selected>महीने</option>
+                <option value="years">साल</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="btn-container">
+        <button class="btn-s" onclick="calculate('simple')">साधारण ब्याज</button>
+        <button class="btn-c" onclick="calculate('compound')">चक्रवृद्धि ब्याज</button>
+    </div>
+
+    <div id="resultSection">
+        <div id="typeText" class="type-label">साधारण ब्याज का परिणाम:</div>
+        <div class="res-row">
+            <span>ब्याज की राशि:</span>
+            <span id="interestVal" style="color: var(--primary); font-weight: bold;">₹0</span>
+        </div>
+        <div class="res-row res-total">
+            <span>कुल देय राशि:</span>
+            <span id="totalVal">₹0</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    function calculate(type) {
+        const p = parseFloat(document.getElementById('p').value);
+        const r = parseFloat(document.getElementById('r').value);
+        const rUnit = document.getElementById('rUnit').value;
+        const t = parseFloat(document.getElementById('t').value);
+        const tUnit = document.getElementById('tUnit').value;
+
+        if (isNaN(p) || isNaN(r) || isNaN(t)) {
+            alert("कृपया सभी जानकारी सही से भरें!");
+            return;
+        }
+
+        // --- मुख्य सुधार: समय को दर (Rate) के अनुसार एडजस्ट करना ---
+        let timeFactor = 0;
+        
+        // अगर दर 'महीने' की है, तो समय को 'महीने' में बदलें
+        if (rUnit === 'month') {
+            if (tUnit === 'months') timeFactor = t;
+            else if (tUnit === 'years') timeFactor = t * 12;
+            else timeFactor = t / 30;
+        } 
+        // अगर दर 'साल' की है, तो समय को 'साल' में बदलें
+        else if (rUnit === 'year') {
+            if (tUnit === 'years') timeFactor = t;
+            else if (tUnit === 'months') timeFactor = t / 12;
+            else timeFactor = t / 365;
+        }
+        // अगर दर 'दिन' की है, तो समय को 'दिन' में बदलें
+        else {
+            if (tUnit === 'days') timeFactor = t;
+            else if (tUnit === 'months') timeFactor = t * 30;
+            else timeFactor = t * 365;
+        }
+
+        let interest = 0;
+        let total = 0;
+
+        const resBox = document.getElementById('resultSection');
+        const typeText = document.getElementById('typeText');
+
+        if (type === 'simple') {
+            interest = (p * r * timeFactor) / 100;
+            total = p + interest;
+            typeText.innerText = "साधारण ब्याज (Simple Interest) का परिणाम:";
+            resBox.style.borderLeftColor = "#0984e3";
+        } else {
+            // चक्रवृद्धि ब्याज: A = P(1 + r/100)^t
+            total = p * Math.pow((1 + (r / 100)), timeFactor);
+            interest = total - p;
+            typeText.innerText = "चक्रवृद्धि ब्याज (Compound Interest) का परिणाम:";
+            resBox.style.borderLeftColor = "#00b894";
+        }
+
+        // UI पर दिखाएं
+        resBox.style.display = 'block';
+        document.getElementById('interestVal').innerText = '₹' + interest.toLocaleString('hi-IN', {maximumFractionDigits: 2});
+        document.getElementById('totalVal').innerText = '₹' + total.toLocaleString('hi-IN', {maximumFractionDigits: 2});
+    }
+</script>
+
+</body>
+</html>
+
